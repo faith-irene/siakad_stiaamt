@@ -30,7 +30,7 @@ export default class KelasPekuliahan {
             await newKelas.save();
             res.status(200).json({ message : "Kelas Berhasil ditambahkan"});
         } catch (error) {
-            res.status(400).json({message : error.message});
+            res.status(402).json({message : error.message});
         }
     }
 
