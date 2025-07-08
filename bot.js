@@ -1,2 +1,0 @@
-console.log("Bot is running...");
-console.log("Hai, saya adalah bot yang membantu mengelola sistem akademik. Saya dapat membantu Anda dengan berbagai tugas seperti menambahkan kelas, mengelola siswa, dan lainnya. Silakan beri tahu saya apa yang Anda butuhkan!");
