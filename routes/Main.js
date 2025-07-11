@@ -33,5 +33,8 @@ routes.post('/kelasperkuliahan',KP.addkelas);
 routes.get('/kelasperkuliahan',KP.getAllKelas);
 routes.get('/kelasperkuliahan/:id',KP.getKelas);
 routes.post('/kelastambahmahasiswa',KP.addMhs);
+routes.post('/kelashapusmahasiswa',KP.delMhs);
+routes.delete('/kelasperkuliahan/:id',KP.delKelas);
+routes.put('/kelasperkuliahan/:id',KP.putKelas);
 
 export default routes;
