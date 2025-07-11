@@ -18,7 +18,7 @@ ConnectDB();
 app.use('/api/v3/',routes);
 
 app.get('/',(req,res) => {
-    res.send("Hello word");
+    res.send("Hello Dunia");
 });
 
 app.listen(port,() => {
