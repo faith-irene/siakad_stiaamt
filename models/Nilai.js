@@ -1,17 +1,12 @@
 import mongoose from "mongoose";
-import Mahasiswa from "./Mahasiswa";
-import TahunAkademik from "./TahunAkademik";
-import kelas from "./Kelas";
+import Mahasiswa from "./Mahasiswa.js";
+import TahunAkademik from "./TahunAkademik.js";
+import kelas from "./Kelas.js";
 
 const NilaiSchema = new mongoose.Schema({
     mahasiswa: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Mahasiswa",
-        required: true
-    },
-    tahun_akademik: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "TahunAkademik",
         required: true
     },
     nilai : [{

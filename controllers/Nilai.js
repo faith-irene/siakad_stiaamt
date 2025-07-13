@@ -2,8 +2,15 @@ import Nilai from "../models/Nilai.js";
 import Mahasiswa from "../models/Mahasiswa.js";
 import TahunAkademik from "../models/TahunAkademik.js";
 import KelasPerkuliahan from "../models/Kelas.js";
+import Matkul from "../models/Matkul.js";
 
 export default class NilaiController {
+
+    hitungIPS = (nilai) => {
+        let totalIPS = 0;
+        const totalBobot = nilai.reduce((total, item) => total + (item.nilai_bobot * (item.kelas_perkuliahan?.mata_kuliah?.sks || 0)), 0);
+        return totalIPS = totalBobot / nilai.reduce((total, item) => total + (item.kelas_perkuliahan.mata_kuliah.sks || 0), 0);
+    }
 
     getHuruf = (nilai) => {
         if (nilai >= 85 && nilai <= 100) return "A";
@@ -78,7 +85,7 @@ export default class NilaiController {
     getNilaiByMahasiswa = async (req, res) => {
         const { nim } = req.body;
         try {
-            const result = await Nilai.findOne({ mahasiswa: nim }).populate("mahasiswa", "nim nama").populate("tahun_akademik", "tahun_akademik semester").populate({
+            const result = await Nilai.findOne({ mahasiswa: nim }).populate("mahasiswa", "nim nama").populate({
                 path: "nilai.kelas_perkuliahan",
                 populate: [
                     {
@@ -102,27 +109,28 @@ export default class NilaiController {
     }
     // Create Nilai
     createNilai = async (req, res) => {
-        const { mahasiswa, tahun_akademik, nilai } = req.body;
+        const { mahasiswa, nilai } = req.body;
         try {
             // Check if Mahasiswa exists
             const mhs = await Mahasiswa.findOne({ nim: mahasiswa });
+            console.log("Mahasiswa: ", mhs);
             if (!mhs) {
                 return res.status(404).json({ message: "Mahasiswa tidak ditemukan" });
             }
-            // Check if Tahun Akademik exists
-            const ta = await TahunAkademik.findById(tahun_akademik);
-            if (!ta) {
-                return res.status(404).json({ message: "Tahun Akademik tidak ditemukan" });
-            }
+            
             // Create Nilai
             let nilailengkap = [];
             let sks_tempuh = 0;
+            let sks_total = 0;
             for (const item of nilai){
                 const kelas = await KelasPerkuliahan.findById(item.kelas_perkuliahan);
+                // console.info("Kelas Perkuliahan: ", kelas);
                 if (!kelas) {
                     return res.status(404).json({ message: `Kelas Perkuliahan dengan ID ${item.kelas_perkuliahan} tidak ditemukan` });
                 }
-                const sks = kelas.mata_kuliah?.sks || 0;
+                const matkul = await Matkul.findById(kelas.mata_kuliah);
+                console.info("Mata Kuliah sks : ", matkul.sks);
+                
                 const nilai_angka = item.nilai_angka;
                 const nilai_huruf = this.getHuruf(nilai_angka);
                 const nilai_bobot = this.getBobot(nilai_huruf);
@@ -133,42 +141,61 @@ export default class NilaiController {
                     nilai_huruf: nilai_huruf,
                     nilai_bobot: nilai_bobot
                 });
-                sks_tempuh += sks;
+                // cek apakh nilai sudah ada
+                console.info("Nilai Lengkap: ", nilailengkap);
+                //  Htiung IP Semester
+                // const ips = this.hitungIPS(nilailengkap);
+                // console.info("IPS: ", ips);
+                sks_tempuh += matkul.sks; // Tambahkan SKS dari mata kuliah
+                // cek sks sebelumnya
+                const total_sks_sebelumnya = await Nilai.findOne({ mahasiswa: mhs._id });
+                // Cek apakah total_sks_sebelumnya ada
+            if (!total_sks_sebelumnya) {
+                console.info("Total SKS Sebelumnya: 0");
+                sks_total = sks_tempuh; // Jika tidak ada, total SKS adalah sks_tempuh
+                } else {
+                console.info("Total SKS Sebelumnya: ", total_sks_sebelumnya.sks_total);
+                // Jika ada, tambahkan sks_tempuh ke total_sks_sebelumnya
+                sks_total = total_sks_sebelumnya.sks_total + sks_tempuh;
+                }
+                
+                // console.info("SKS Sebelumnya: ", sks_sebelumnya);
             }
+            console.info("Total SKS Sebelumnya: ", total_sks_sebelumnya);
+            console.info("SKS Total: ", sks_total);
                 // Hitung sks total
-                const nilai_sebelumnya = await Nilai.findOne({ mahasiswa: mhs._id, tahun_akademik: ta._id });
-                const sks_sebelumnya = nilai_sebelumnya.reduce((total,item) => total + (item.sks_tempuh ||0), 0);
+                
                 
                 // Hitung IPK dan IPS
-                let ips = 0;
-                if (sks_tempuh > 0){
-                    ips = nilailengkap.reduce((total, item) => total + (item.nilai_bobot * (kelas.mata_kuliah?.sks || 0)), 0) / sks_tempuh;
-                }
-                console.log("IPS: ", ips);
-                let ipk = 0;
-                if (sks_tempuh + sks_sebelumnya > 0) {
-                    const nilai_total = nilailengkap.reduce((total, item) => total + (item.nilai_bobot * (kelas.mata_kuliah?.sks || 0)), 0);
-                    ipk = nilai_total / (sks_tempuh + sks_sebelumnya);
-                }
-                console.log("IPK: ", ipk);
+                // let ips = 0;
+                // if (sks_tempuh > 0){
+                //     ips = nilailengkap.reduce((total, item) => total + (item.nilai_bobot * (kelas.mata_kuliah?.sks || 0)), 0) / sks_tempuh;
+                // }
+                // console.log("IPS: ", ips);
+                // let ipk = 0;
+                // if (sks_tempuh + sks_sebelumnya > 0) {
+                //     const nilai_total = nilailengkap.reduce((total, item) => total + (item.nilai_bobot * (kelas.mata_kuliah?.sks || 0)), 0);
+                //     ipk = nilai_total / (sks_tempuh + sks_sebelumnya);
+                // }
+                // console.log("IPK: ", ipk);
 
                 // Simpan data Nilai
+                // const newNilai = new Nilai({
+                //     mahasiswa: mhs._id,
+                //     tahun_akademik: ta._id,
+                //     nilai: nilailengkap,
+                //     sks_tempuh: sks_tempuh,
+                //     sks_total: sks_tempuh + sks_sebelumnya,
+                //     ipk: ipk,
+                //     ips: ips
+                // });
                 const newNilai = new Nilai({
-                    mahasiswa: mhs._id,
-                    tahun_akademik: ta._id,
-                    nilai: nilailengkap,
-                    sks_tempuh: sks_tempuh,
-                    sks_total: sks_tempuh + sks_sebelumnya,
-                    ipk: ipk,
-                    ips: ips
-                });
+                    mahasiswa : mhs._id,
+                    nilai : nilailengkap,
+                    sks_tempuh : sks_tempuh
+                })
             // Save Nilai
-            console.log("Nilai Lengkap: ", nilailengkap);
-            console.log("SKS Tempuh: ", sks_tempuh);
-            console.log("SKS Total: ", sks_tempuh + sks_sebelumnya);
-            console.log("IPK: ", ipk);
-            console.log("IPS: ", ips); 
-            console.log("Data Nilai: ", newNilai);
+            
             await newNilai.save();
             res.status(201).json({ message: "Data Nilai berhasil ditambahkan", data: newNilai });
         } catch (error) {
